@@ -56,8 +56,8 @@ Code:
 
 def detect_performance_issues(code):
     issues = []
-    lines = code.split("\n")
 
+    lines = code.split("\n")
     loop_count = 0
 
     for line in lines:
@@ -68,8 +68,8 @@ def detect_performance_issues(code):
     if loop_count >= 2:
         issues.append("⚠️ Possible nested loops detected (O(n²) complexity).")
 
-    if "range(len(" in code:
-        issues.append("⚠️ Using range(len()). Consider direct iteration for better readability and safety.")
+    if "range(len(") in code:
+        issues.append("⚠️ Using range(len()). Consider direct iteration.")
 
     if ".append(" in code and "+" in code:
         issues.append("⚠️ List concatenation inside loops may impact performance.")
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
         print("----- CODE START -----")
         print(code)
-        print("----- CODE END -----\n")
+        print("----- CODE END -----")
 
         print("🤖 AI LOGICAL REVIEW:")
         print(analyze_with_ai(code))
@@ -102,6 +102,7 @@ if __name__ == "__main__":
 
         print("⚡ PERFORMANCE REVIEW:")
         performance_issues = detect_performance_issues(code)
+
         for issue in performance_issues:
             print(issue)
 
