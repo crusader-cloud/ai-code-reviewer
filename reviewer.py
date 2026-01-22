@@ -2,6 +2,7 @@ import requests
 import os
 import subprocess
 
+
 def get_changed_files():
     result = subprocess.run(
         ["git", "diff", "--name-only", "origin/main"],
@@ -11,12 +12,14 @@ def get_changed_files():
     files = result.stdout.strip().split("\n")
     return files
 
+
 def read_file(file_path):
     try:
         with open(file_path, "r") as f:
             return f.read()
     except Exception as e:
         return f"Could not read file: {e}"
+
 
 def analyze_with_ai(code):
     api_key = os.getenv("OPENAI_API_KEY")
@@ -50,51 +53,19 @@ Code:
 
     return response.json()["choices"][0]["message"]["content"]
 
-if __name__ == "__main__":
-    files = get_changed_files()
-
-    print("📂 Changed files detected:\n")
-
-    for file in files:
-        if file.strip() == "":
-            continue
-        print(f"📄 File: {file}")
-        
-        code = read_file(file)
-
-        print("----- CODE START -----")
-        print(code)
-        print("----- CODE END -----")
-
-        print("🤖 AI LOGICAL REVIEW:")
-        print(analyze_with_ai(code))
-        print("\n")
-        print("⚡ PERFORMANCE REVIEW:")
-        performance_issues = detect_performance_issues(code)
-
-        for issue in performance_issues:
-        print(issue)
-
-        print("\n")
-        
 
 def detect_performance_issues(code):
     issues = []
-
     lines = code.split("\n")
 
     loop_count = 0
-    nested_loop = False
 
     for line in lines:
         stripped = line.strip()
-
         if stripped.startswith("for ") or stripped.startswith("while "):
             loop_count += 1
-            if loop_count >= 2:
-                nested_loop = True
 
-    if nested_loop:
+    if loop_count >= 2:
         issues.append("⚠️ Possible nested loops detected (O(n²) complexity).")
 
     if "range(len(" in code:
@@ -107,3 +78,31 @@ def detect_performance_issues(code):
         issues.append("✅ No obvious performance issues detected.")
 
     return issues
+
+
+if __name__ == "__main__":
+    files = get_changed_files()
+
+    print("📂 Changed files detected:\n")
+
+    for file in files:
+        if file.strip() == "":
+            continue
+
+        print(f"📄 File: {file}")
+        code = read_file(file)
+
+        print("----- CODE START -----")
+        print(code)
+        print("----- CODE END -----\n")
+
+        print("🤖 AI LOGICAL REVIEW:")
+        print(analyze_with_ai(code))
+        print("\n")
+
+        print("⚡ PERFORMANCE REVIEW:")
+        performance_issues = detect_performance_issues(code)
+        for issue in performance_issues:
+            print(issue)
+
+        print("\n")
