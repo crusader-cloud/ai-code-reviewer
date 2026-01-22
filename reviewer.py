@@ -69,3 +69,38 @@ if __name__ == "__main__":
         print("🤖 AI LOGICAL REVIEW:")
         print(analyze_with_ai(code))
         print("\n")
+        print("⚡ PERFORMANCE REVIEW:")
+        performance_issues = detect_performance_issues(code)
+        for issue in performance_issues:
+        print(issue)
+        print("\n")
+
+def detect_performance_issues(code):
+    issues = []
+
+    lines = code.split("\n")
+
+    loop_count = 0
+    nested_loop = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith("for ") or stripped.startswith("while "):
+            loop_count += 1
+            if loop_count >= 2:
+                nested_loop = True
+
+    if nested_loop:
+        issues.append("⚠️ Possible nested loops detected (O(n²) complexity).")
+
+    if "range(len(" in code:
+        issues.append("⚠️ Using range(len()). Consider direct iteration for better readability and safety.")
+
+    if ".append(" in code and "+" in code:
+        issues.append("⚠️ List concatenation inside loops may impact performance.")
+
+    if not issues:
+        issues.append("✅ No obvious performance issues detected.")
+
+    return issues
