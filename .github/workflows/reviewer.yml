@@ -1,0 +1,16 @@
+name: PR Reviewer Bot
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Print changed files
+        run: |
+          git fetch origin main
+          git diff --name-only origin/main
