@@ -71,9 +71,12 @@ if __name__ == "__main__":
         print("\n")
         print("⚡ PERFORMANCE REVIEW:")
         performance_issues = detect_performance_issues(code)
+
         for issue in performance_issues:
         print(issue)
+
         print("\n")
+        
 
 def detect_performance_issues(code):
     issues = []
