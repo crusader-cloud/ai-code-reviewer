@@ -8,3 +8,7 @@ def multiply(a, b):
 for i in range(5):
     print(add(i, i))
     print(multiply(i, i))
+for i in range(5):
+    for j in range(5):
+        print(i, j)
+
