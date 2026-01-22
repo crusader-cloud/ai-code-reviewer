@@ -10,7 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Print changed files
-        run: |
-          git fetch origin main
-          git diff --name-only origin/main
+      - name: Fetch base branch
+        run: git fetch origin main
+
+      - name: Run reviewer script
+        run: python reviewer.py
