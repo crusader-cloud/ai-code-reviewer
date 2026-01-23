@@ -1,6 +1,7 @@
-import requests
+iimport requests
 import os
 import subprocess
+import json
 
 
 def get_changed_files():
@@ -9,8 +10,7 @@ def get_changed_files():
         capture_output=True,
         text=True
     )
-    files = result.stdout.strip().split("\n")
-    return files
+    return result.stdout.strip().split("\n")
 
 
 def read_file(file_path):
@@ -18,12 +18,11 @@ def read_file(file_path):
         with open(file_path, "r") as f:
             return f.read()
     except Exception as e:
-        return f"Could not read file: {e}"
+        return "Could not read file: " + str(e)
 
 
 def analyze_with_ai(code):
     api_key = os.getenv("OPENAI_API_KEY")
-
     if not api_key:
         return "OPENAI_API_KEY not found."
 
@@ -56,7 +55,6 @@ Code:
 
 def detect_performance_issues(code):
     issues = []
-
     lines = code.split("\n")
     loop_count = 0
 
@@ -71,9 +69,6 @@ def detect_performance_issues(code):
     if "range(len(") in code:
         issues.append("⚠️ Using range(len()). Consider direct iteration.")
 
-    if ".append(" in code and "+" in code:
-        issues.append("⚠️ List concatenation inside loops may impact performance.")
-
     if not issues:
         issues.append("✅ No obvious performance issues detected.")
 
@@ -82,11 +77,10 @@ def detect_performance_issues(code):
 
 if __name__ == "__main__":
     files = get_changed_files()
-
     print("📂 Changed files detected:\n")
 
     for file in files:
-        if file.strip() == "":
+        if not file.strip():
             continue
 
         print(f"📄 File: {file}")
@@ -101,9 +95,7 @@ if __name__ == "__main__":
         print("\n")
 
         print("⚡ PERFORMANCE REVIEW:")
-        performance_issues = detect_performance_issues(code)
-
-        for issue in performance_issues:
+        for issue in detect_performance_issues(code):
             print(issue)
 
         print("\n")
