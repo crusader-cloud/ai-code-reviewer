@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Reviewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, sans-serif; 
+      background: linear-gradient(135deg, #1e293b 0%, #4c1d95 50%, #1e293b 100%); 
+      min-height: 100vh;
+      color: white;
+    }
+    .container { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+    .card { 
+      background: rgba(30, 41, 59, 0.7); 
+      backdrop-filter: blur(10px); 
+      border-radius: 8px; 
+      padding: 1.5rem; 
+      border: 1px solid rgba(168, 85, 247, 0.2); 
+      margin-bottom: 1.5rem;
+    }
+    .btn { 
+      padding: 0.75rem 1.5rem; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      border: none; 
+      width: 100%;
+      font-size: 1rem;
+    }
+    .btn-primary { background: #7c3aed; color: white; }
+    .btn-primary:hover { background: #6d28d9; }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-green:hover { background: #15803d; }
+    .input, .select, .textarea { 
+      width: 100%; 
+      padding: 0.75rem; 
+      background: #334155; 
+      color: white; 
+      border: 1px solid rgba(168, 85, 247, 0.3); 
+      border-radius: 8px; 
+      outline: none;
+      font-size: 1rem;
+    }
+    .textarea { 
+      min-height: 200px; 
+      font-family: 'Courier New', monospace; 
+      font-size: 0.9rem;
+    }
+    .label { 
+      display: block; 
+      font-size: 0.875rem; 
+      font-weight: 500; 
+      color: #e9d5ff; 
+      margin-bottom: 0.5rem; 
+    }
+    .error { 
+      background: rgba(239, 68, 68, 0.2); 
+      border: 1px solid rgba(239, 68, 68, 0.5); 
+      border-radius: 8px; 
+      padding: 1rem; 
+      color: #fecaca; 
+      margin-top: 1rem; 
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .space-y > * + * { margin-top: 1rem; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .text-center { text-align: center; }
+    .hidden { display: none; }
+    .status { border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .status-good { background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); }
+    .status-bad { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); }
+    .issue { border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid; }
+    .issue-bugs { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #fecaca; }
+    .issue-perf { background: rgba(234, 179, 8, 0.1); border-color: rgba(234, 179, 8, 0.3); color: #fef08a; }
+    .issue-sec { background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.3); color: #e9d5ff; }
+    .issue-sug { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); color: #bbf7d0; }
+    h3 { margin-bottom: 0.5rem; font-weight: 600; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  
+  <!-- Login Screen -->
+  <div id="loginScreen" class="container">
+    <div class="card" style="max-width: 28rem; margin: 5rem auto;">
+      <div class="text-center mb-2">
+        <div style="width: 4rem; height: 4rem; background: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 2rem;">
+          🤖
+        </div>
+        <h1 style="font-size: 1.875rem; margin-bottom: 0.5rem;">AI Code Reviewer</h1>
+        <p style="color: #e9d5ff;">Login with GitHub to review PRs</p>
+      </div>
+
+      <div class="space-y">
+        <div>
+          <label class="label">GitHub Personal Access Token</label>
+          <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxx" class="input">
+          <p style="font-size: 0.75rem; color: #e9d5ff; margin-top: 0.25rem;">
+            Get from: Settings → Developer settings → Tokens
+          </p>
+        </div>
+        <div id="loginError" class="error hidden"></div>
+        <button onclick="login()" class="btn btn-primary">Login with GitHub</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="mainApp" class="container hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <div>
+        <h1 style="font-size: 1.875rem; margin-bottom: 0.5rem;">🤖 AI Code Reviewer</h1>
+        <p style="color: #e9d5ff;">Auto-review pull requests</p>
+      </div>
+      <button onclick="logout()" style="background: #475569; color: white; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer;">
+        Logout
+      </button>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">📥 Fetch Pull Request</h2>
+          <div class="space-y">
+            <div>
+              <label class="label">Repository URL</label>
+              <input type="text" id="repoUrl" placeholder="https://github.com/owner/repo" class="input">
+            </div>
+            <div>
+              <label class="label">PR Number</label>
+              <input type="number" id="prNumber" placeholder="123" class="input">
+            </div>
+            <button onclick="fetchPR()" class="btn btn-blue" id="fetchBtn">Fetch PR Code</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">✍️ Manual Code</h2>
+          <div class="space-y">
+            <select id="language" class="select">
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="go">Go</option>
+            </select>
+            <textarea id="codeInput" placeholder="Or paste code manually..." class="textarea"></textarea>
+            <button onclick="analyzeCode()" class="btn btn-primary" id="analyzeBtn">Review Code</button>
+          </div>
+        </div>
+
+        <div id="errorBox" class="error hidden"></div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="font-size: 1.25rem;">📋 Results</h2>
+          <button onclick="postToGitHub()" id="postBtn" class="btn btn-green hidden" style="width: auto; padding: 0.5rem 1rem;">
+            Post to GitHub
+          </button>
+        </div>
+
+        <div id="results">
+          <div style="text-align: center; padding: 3rem; color: #e9d5ff;">
+            <div style="font-size: 4rem;">📝</div>
+            <p>Fetch PR or paste code to start</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let token = '';
+    let currentReview = null;
+
+    function login() {
+      token = document.getElementById('tokenInput').value.trim();
+      if (!token) {
+        showError('loginError', 'Please enter your GitHub token');
+        return;
+      }
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+    }
+
+    function logout() {
+      token = '';
+      currentReview = null;
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('tokenInput').value = '';
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function hideError(elementId) {
+      document.getElementById(elementId).classList.add('hidden');
+    }
+
+    async function fetchPR() {
+      const repoUrl = document.getElementById('repoUrl').value.trim();
+      const prNumber = document.getElementById('prNumber').value.trim();
+      
+      if (!repoUrl || !prNumber) {
+        showError('errorBox', 'Please enter repository URL and PR number');
+        return;
+      }
+
+      const btn = document.getElementById('fetchBtn');
+      btn.textContent = 'Fetching...';
+      btn.disabled = true;
+      hideError('errorBox');
+
+      try {
+        const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+        if (!match) throw new Error('Invalid GitHub URL');
+
+        const [, owner, repo] = match;
+        const cleanRepo = repo.replace('.git', '');
+
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${cleanRepo}/pulls/${prNumber}/files`,
+          { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }}
+        );
+
+        if (!response.ok) throw new Error('Failed to fetch PR');
+
+        const files = await response.json();
+        if (!files.length) throw new Error('No files found');
+
+        const code = files
+          .filter(f => f.patch)
+          .map(f => `// ${f.filename}\n${f.patch}`)
+          .join('\n\n');
+
+        document.getElementById('codeInput').value = code;
+        alert(`✅ Fetched ${files.length} file(s)`);
+      } catch (err) {
+        showError('errorBox', err.message);
+      } finally {
+        btn.textContent = 'Fetch PR Code';
+        btn.disabled = false;
+      }
+    }
+
+    async function analyzeCode() {
+      const code = document.getElementById('codeInput').value.trim();
+      if (!code) {
+        showError('errorBox', 'Please enter code or fetch a PR');
+        return;
+      }
+
+      const btn = document.getElementById('analyzeBtn');
+      btn.textContent = 'Analyzing...';
+      btn.disabled = true;
+      hideError('errorBox');
+
+      try {
+        const language = document.getElementById('language').value;
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1500,
+            messages: [{
+              role: 'user',
+              content: `Review this ${language} code. Respond ONLY with JSON:
+{
+  "summary": "brief assessment",
+  "bugs": ["bug1"],
+  "performance": ["perf1"],
+  "style": ["style1"],
+  "security": ["sec1"],
+  "suggestions": ["sug1"],
+  "severity": "low|medium|high",
+  "approved": true/false
+}
+
+Code:
+${code}`
+            }]
+          })
+        });
+
+        if (!response.ok) throw new Error('API failed');
+
+        const data = await response.json();
+        const text = data.content[0].text.replace(/```json|```/g, '').trim();
+        currentReview = JSON.parse(text);
+        displayReview(currentReview);
+      } catch (err) {
+        showError('errorBox', err.message);
+      } finally {
+        btn.textContent = 'Review Code';
+        btn.disabled = false;
+      }
+    }
+
+    function displayReview(review) {
+      const statusClass = review.approved ? 'status-good' : 'status-bad';
+      const statusText = review.approved ? '✅ Approved' : '⚠️ Changes Requested';
+      
+      let html = `
+        <div class="status ${statusClass}">
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">${statusText} (${review.severity} severity)</div>
+          <p>${review.summary}</p>
+        </div>
+      `;
+
+      if (review.bugs?.length) {
+        html += `<div class="issue issue-bugs"><h3>🐛 Bugs</h3>`;
+        review.bugs.forEach(b => html += `<p style="margin: 0.25rem 0;">• ${b}</p>`);
+        html += `</div>`;
+      }
+
+      if (review.performance?.length) {
+        html += `<div class="issue issue-perf"><h3>⚡ Performance</h3>`;
+        review.performance.forEach(p => html += `<p style="margin: 0.25rem 0;">• ${p}</p>`);
+        html += `</div>`;
+      }
+
+      if (review.security?.length) {
+        html += `<div class="issue issue-sec"><h3>🔒 Security</h3>`;
+        review.security.forEach(s => html += `<p style="margin: 0.25rem 0;">• ${s}</p>`);
+        html += `</div>`;
+      }
+
+      if (review.suggestions?.length) {
+        html += `<div class="issue issue-sug"><h3>💡 Suggestions</h3>`;
+        review.suggestions.forEach(s => html += `<p style="margin: 0.25rem 0;">• ${s}</p>`);
+        html += `</div>`;
+      }
+
+      document.getElementById('results').innerHTML = html;
+      document.getElementById('postBtn').classList.remove('hidden');
+    }
+
+    async function postToGitHub() {
+      if (!currentReview) return;
+
+      const repoUrl = document.getElementById('repoUrl').value.trim();
+      const prNumber = document.getElementById('prNumber').value.trim();
+
+      if (!repoUrl || !prNumber) {
+        showError('errorBox', 'Enter repo URL and PR number first');
+        return;
+      }
+
+      const btn = document.getElementById('postBtn');
+      btn.textContent = 'Posting...';
+      btn.disabled = true;
+
+      try {
+        const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+        const [, owner, repo] = match;
+        const cleanRepo = repo.replace('.git', '');
+
+        let comment = `## 🤖 AI Code Review\n\n`;
+        comment += `**Status:** ${currentReview.approved ? '✅ Approved' : '⚠️ Changes Requested'}\n`;
+        comment += `**Summary:** ${currentReview.summary}\n\n`;
+        if (currentReview.bugs?.length) comment += `### 🐛 Bugs\n${currentReview.bugs.map(b => `- ${b}`).join('\n')}\n\n`;
+        if (currentReview.security?.length) comment += `### 🔒 Security\n${currentReview.security.map(s => `- ${s}`).join('\n')}\n\n`;
+        if (currentReview.performance?.length) comment += `### ⚡ Performance\n${currentReview.performance.map(p => `- ${p}`).join('\n')}\n\n`;
+        if (currentReview.suggestions?.length) comment += `### 💡 Suggestions\n${currentReview.suggestions.map(s => `- ${s}`).join('\n')}\n`;
+
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${cleanRepo}/issues/${prNumber}/comments`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ body: comment })
+          }
+        );
+
+        if (!response.ok) throw new Error('Failed to post');
+        alert('✅ Posted to GitHub!');
+      } catch (err) {
+        showError('errorBox', err.message);
+      } finally {
+        btn.textContent = 'Post to GitHub';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

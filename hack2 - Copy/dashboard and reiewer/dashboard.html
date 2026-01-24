@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Reviewer - Dashboard</title>
+    <link rel="stylesheet" href="dashboard-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>🤖 AI Reviewer</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="#overview" class="nav-item active" data-section="overview">
+                    <span class="icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="#reviews" class="nav-item" data-section="reviews">
+                    <span class="icon">📝</span>
+                    <span>Reviews</span>
+                </a>
+                <a href="#analytics" class="nav-item" data-section="analytics">
+                    <span class="icon">📈</span>
+                    <span>Analytics</span>
+                </a>
+                <a href="#repositories" class="nav-item" data-section="repositories">
+                    <span class="icon">📦</span>
+                    <span>Repositories</span>
+                </a>
+                <a href="index.html" class="nav-item">
+                    <span class="icon">✍️</span>
+                    <span>Manual Review</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/docs" target="_blank" class="footer-link">API Docs</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title">Dashboard Overview</h1>
+                <div class="header-actions">
+                    <button class="btn-refresh" onclick="refreshData()">
+                        <span class="refresh-icon">🔄</span> Refresh
+                    </button>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <section id="overview-section" class="content-section active">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total PRs</div>
+                            <div class="stat-value" id="total-prs">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✍️</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Manual Reviews</div>
+                            <div class="stat-value" id="total-manual">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Comments</div>
+                            <div class="stat-value" id="total-comments">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Avg Score</div>
+                            <div class="stat-value" id="avg-score">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3>Code Quality Scores</h3>
+                        <canvas id="scoresChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Issue Severity Breakdown</h3>
+                        <canvas id="severityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-section">
+                    <h3>Recent Activity (Last 7 Days)</h3>
+                    <div class="activity-stats">
+                        <div class="activity-item">
+                            <span class="activity-label">Pull Requests</span>
+                            <span class="activity-value" id="recent-prs">-</span>
+                        </div>
+                        <div class="activity-item">
+                            <span class="activity-label">Manual Reviews</span>
+                            <span class="activity-value" id="recent-manual">-</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reviews Section -->
+            <section id="reviews-section" class="content-section">
+                <div class="section-header">
+                    <h2>Recent Pull Request Reviews</h2>
+                </div>
+                <div id="reviews-list" class="reviews-list">
+                    <!-- Reviews will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics-section" class="content-section">
+                <div class="section-header">
+                    <h2>Trends & Analytics</h2>
+                    <select id="trend-period" class="period-selector">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card full-width">
+                        <h3>PR Activity Over Time</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card full-width">
+                        <h3>Score Trends</h3>
+                        <canvas id="scoreTrendsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3>Issue Categories</h3>
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Feedback Summary</h3>
+                        <canvas id="feedbackChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Repositories Section -->
+            <section id="repositories-section" class="content-section">
+                <div class="section-header">
+                    <h2>Repository Statistics</h2>
+                </div>
+                <div id="repos-list" class="repos-grid">
+                    <!-- Repositories will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="dashboard-script.js"></script>
+</body>
+
+</html>

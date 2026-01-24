@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI GitHub PR Reviewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  
+  <!-- Login Screen -->
+  <div id="loginScreen" class="container">
+    <div class="card login-card">
+      <div class="text-center mb-2">
+        <div class="logo">🤖</div>
+        <h1>AI GitHub PR Reviewer</h1>
+        <p class="subtitle">Automated code review powered by AI</p>
+      </div>
+      <div class="space-y">
+        <button onclick="loginWithGitHub()" class="btn btn-primary">
+          <span style="font-size: 1.2rem; margin-right: 0.5rem;">🔐</span>
+          Login with GitHub
+        </button>
+        <p class="help-text">
+          You'll be redirected to GitHub to authorize this app
+        </p>
+      </div>
+      <div id="loginError" class="error hidden"></div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="mainApp" class="container hidden">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1>🤖 AI GitHub PR Reviewer</h1>
+        <p class="subtitle" id="userInfo"></p>
+      </div>
+      <button onclick="logout()" class="btn-logout">Logout</button>
+    </div>
+
+    <!-- Repository Browser View -->
+    <div id="repoView" class="view">
+      <div class="card">
+        <div class="card-header">
+          <h2>📚 Your Repositories</h2>
+          <input 
+            type="text" 
+            id="repoSearch" 
+            placeholder="Search repositories..." 
+            class="input search-input"
+            oninput="filterRepos()"
+          >
+        </div>
+        <div id="repoList" class="repo-list">
+          <div class="loading">Loading repositories...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pull Request Selector View -->
+    <div id="prView" class="view hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <button onclick="showRepoView()" class="btn-back">← Back to Repositories</button>
+            <h2 id="prViewTitle">Pull Requests</h2>
+          </div>
+          <div class="pr-filters">
+            <select id="prStateFilter" class="select" onchange="loadPullRequests()">
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+        </div>
+        <div id="prList" class="pr-list">
+          <div class="loading">Loading pull requests...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Review View -->
+    <div id="reviewView" class="view hidden">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <button onclick="showPRView()" class="btn-back">← Back to PRs</button>
+              <h2>📝 Code Review</h2>
+            </div>
+            
+            <div class="space-y">
+              <div id="prInfo" class="pr-info hidden"></div>
+              
+              <div>
+                <label class="label">Language</label>
+                <select id="language" class="select">
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="cpp">C++</option>
+                  <option value="csharp">C#</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="label">Code to Review</label>
+                <textarea 
+                  id="codeInput" 
+                  placeholder="Code will appear here when you select a PR, or paste manually..." 
+                  class="textarea"
+                ></textarea>
+              </div>
+
+              <button onclick="analyzeCode()" class="btn btn-primary" id="analyzeBtn">
+                🔍 Analyze Code
+              </button>
+            </div>
+          </div>
+
+          <div id="errorBox" class="error hidden"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>📊 Review Results</h2>
+            <button 
+              onclick="postToGitHub()" 
+              id="postBtn" 
+              class="btn btn-green hidden"
+              style="width: auto; padding: 0.5rem 1rem;"
+            >
+              Post to GitHub
+            </button>
+          </div>
+
+          <div id="results">
+            <div class="empty-state">
+              <div class="empty-icon">📝</div>
+              <p>Analyze code to see review results</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Review Button (Floating) -->
+    <button onclick="showManualReview()" class="btn-float" title="Manual Code Review">
+      ✍️
+    </button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

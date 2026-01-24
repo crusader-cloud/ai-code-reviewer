@@ -1,0 +1,20 @@
+{
+  "name": "github-pr-reviewer",
+  "version": "1.0.0",
+  "description": "AI-powered GitHub Pull Request Reviewer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["github", "code-review", "ai", "pull-request"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  }
+}

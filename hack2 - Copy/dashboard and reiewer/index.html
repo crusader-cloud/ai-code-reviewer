@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Reviewer - Manual Review</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI Code Reviewer</h1>
+            <p class="subtitle">Get instant, intelligent feedback on your code</p>
+        </header>
+
+        <main>
+            <div class="review-form">
+                <div class="form-group">
+                    <label for="language">Programming Language</label>
+                    <select id="language" class="form-control">
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="go">Go</option>
+                        <option value="rust">Rust</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="code">Code to Review</label>
+                    <textarea id="code" class="form-control code-input" placeholder="Paste your code here..."
+                        rows="15"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="context">Additional Context (Optional)</label>
+                    <textarea id="context" class="form-control"
+                        placeholder="Provide any additional context about the code..." rows="3"></textarea>
+                </div>
+
+                <button id="reviewBtn" class="btn btn-primary">
+                    <span class="btn-text">Review Code</span>
+                    <span class="loader" style="display: none;"></span>
+                </button>
+            </div>
+
+            <div id="results" class="results" style="display: none;">
+                <h2>Review Results</h2>
+
+                <div class="scores-grid">
+                    <div class="score-card">
+                        <div class="score-label">Overall</div>
+                        <div class="score-value" id="overallScore">-</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-label">Correctness</div>
+                        <div class="score-value" id="correctnessScore">-</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-label">Performance</div>
+                        <div class="score-value" id="performanceScore">-</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-label">Readability</div>
+                        <div class="score-value" id="readabilityScore">-</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-label">Maintainability</div>
+                        <div class="score-value" id="maintainabilityScore">-</div>
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <h3>Summary</h3>
+                    <p id="summary"></p>
+                </div>
+
+                <div class="issues-section">
+                    <h3>Issues Found (<span id="issueCount">0</span>)</h3>
+                    <div id="issuesList"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by AI | <a href="/docs" target="_blank">API Documentation</a></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

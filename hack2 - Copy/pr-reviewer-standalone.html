@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI GitHub PR Reviewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card {
+            max-width: 500px;
+            margin: 5rem auto;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+        }
+
+        .input,
+        .select,
+        .textarea {
+            width: 100%;
+            padding: 0.875rem;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input::placeholder,
+        .textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input:focus,
+        .select:focus,
+        .textarea:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .textarea {
+            min-height: 300px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 968px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .space-y>*+* {
+            margin-top: 1.5rem;
+        }
+
+        .error,
+        .success {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fecaca;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.5);
+            color: #bbf7d0;
+        }
+
+        .repo-item,
+        .pr-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .repo-item:hover,
+        .pr-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .repo-name,
+        .pr-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .repo-desc,
+        .pr-meta {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .repo-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .review-result {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+
+        .review-approved {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .review-changes {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .issue-section {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .issue-section h3 {
+            margin-bottom: 0.75rem;
+        }
+
+        .issue-section p {
+            margin: 0.5rem 0;
+            padding-left: 1rem;
+        }
+
+        .btn-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s;
+        }
+
+        .btn-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.7);
+        }
+
+        .help-text {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .help-text a {
+            color: #a78bfa;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .help-text a:hover {
+            text-decoration: underline;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .toggle-password:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .input-with-toggle {
+            padding-right: 3rem;
+        }
+
+        .setup-steps {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+
+        .setup-steps h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .step {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .validation-message {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .validation-message.show {
+            display: block;
+        }
+
+        .validation-success {
+            color: #bbf7d0;
+        }
+
+        .validation-error {
+            color: #fecaca;
+        }
+
+        .pr-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-open {
+            background: rgba(34, 197, 94, 0.2);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.5);
+        }
+
+        .badge-closed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .repo-list,
+        .pr-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .repo-list::-webkit-scrollbar,
+        .pr-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .repo-list::-webkit-scrollbar-track,
+        .pr-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .repo-list::-webkit-scrollbar-thumb,
+        .pr-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="container">
+        <div class="card login-card">
+            <div class="logo">🤖</div>
+            <h1>AI GitHub PR Reviewer</h1>
+            <p class="subtitle">Automated code review powered by Google Gemini</p>
+
+            <div class="space-y">
+                <div>
+                    <label class="label">GitHub Personal Access Token *</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx"
+                            class="input input-with-toggle" oninput="validateGitHubToken()">
+                        <button type="button" class="toggle-password" onclick="togglePassword('githubToken')"
+                            title="Toggle visibility">
+                            👁️
+                        </button>
+                    </div>
+                    <p class="validation-message" id="githubTokenValidation"></p>
+                    <p class="help-text">
+                        <strong>Don't have a token?</strong><br>
+                        1. Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings →
+                            Tokens</a><br>
+                        2. Click "Generate new token (classic)"<br>
+                        3. Select scopes: <strong>repo</strong> + <strong>read:user</strong><br>
+                        4. Generate and copy the token
+                    </p>
+                </div>
+
+                <div>
+                    <label class="label">Google Gemini API Key *</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="geminiKey" placeholder="AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                            class="input input-with-toggle" oninput="validateGeminiKey()">
+                        <button type="button" class="toggle-password" onclick="togglePassword('geminiKey')"
+                            title="Toggle visibility">
+                            👁️
+                        </button>
+                    </div>
+                    <p class="validation-message" id="geminiKeyValidation"></p>
+                    <p class="help-text">
+                        <strong>Don't have an API key?</strong><br>
+                        1. Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI
+                            Studio</a><br>
+                        2. Sign in with your Google account<br>
+                        3. Click "Create API Key"<br>
+                        4. Copy your API key
+                    </p>
+                </div>
+
+                <div id="loginError" class="error hidden"></div>
+                <button onclick="login()" class="btn btn-primary" id="loginBtn">
+                    <span id="loginBtnText">🚀 Start Reviewing</span>
+                </button>
+
+                <div class="setup-steps">
+                    <h3>✨ Quick Setup Guide</h3>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div>Get your GitHub Personal Access Token (link above)</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div>Get your Google Gemini API Key (link above)</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div>Paste both keys and click "Start Reviewing"</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div>Your credentials are saved securely in your browser</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="container hidden">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>🤖 AI GitHub PR Reviewer</h1>
+                <p class="subtitle" id="userInfo"></p>
+            </div>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+
+        <!-- Repository View -->
+        <div id="repoView" class="view">
+            <div class="card">
+                <h2>📚 Your Repositories</h2>
+                <input type="text" id="repoSearch" placeholder="Search repositories..." class="input"
+                    oninput="filterRepos()" style="margin-bottom: 1rem;">
+                <div id="repoList" class="repo-list">
+                    <div class="loading">Loading repositories...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pull Request View -->
+        <div id="prView" class="view hidden">
+            <div class="card">
+                <button onclick="showRepoView()" class="btn-back">← Back to Repositories</button>
+                <h2 id="prViewTitle">Pull Requests</h2>
+                <select id="prStateFilter" class="select" onchange="loadPullRequests()"
+                    style="margin-bottom: 1rem; width: auto;">
+                    <option value="open">Open PRs</option>
+                    <option value="closed">Closed PRs</option>
+                    <option value="all">All PRs</option>
+                </select>
+                <div id="prList" class="pr-list">
+                    <div class="loading">Loading pull requests...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review View -->
+        <div id="reviewView" class="view hidden">
+            <div class="grid">
+                <div>
+                    <div class="card">
+                        <button onclick="showPRView()" class="btn-back">← Back to PRs</button>
+                        <h2>📝 Code Review</h2>
+
+                        <div class="space-y">
+                            <div id="prInfo" class="hidden"
+                                style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;"></div>
+
+                            <div>
+                                <label class="label">Language</label>
+                                <select id="language" class="select">
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="typescript">TypeScript</option>
+                                    <option value="python">Python</option>
+                                    <option value="java">Java</option>
+                                    <option value="go">Go</option>
+                                    <option value="rust">Rust</option>
+                                    <option value="cpp">C++</option>
+                                    <option value="csharp">C#</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="label">Code to Review</label>
+                                <textarea id="codeInput"
+                                    placeholder="Code will appear here when you select a PR, or paste manually..."
+                                    class="textarea"></textarea>
+                            </div>
+
+                            <button onclick="analyzeCode()" class="btn btn-primary" id="analyzeBtn">🔍 Analyze
+                                Code</button>
+                        </div>
+                    </div>
+
+                    <div id="errorBox" class="error hidden"></div>
+                </div>
+
+                <div class="card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>📊 Review Results</h2>
+                        <button onclick="postToGitHub()" id="postBtn" class="btn btn-secondary hidden"
+                            style="width: auto; padding: 0.5rem 1.5rem;">
+                            Post to GitHub
+                        </button>
+                    </div>
+
+                    <div id="results">
+                        <div class="empty-state">
+                            <div class="empty-icon">📝</div>
+                            <p>Analyze code to see review results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Review Button -->
+        <button onclick="showManualReview()" class="btn-float" title="Manual Code Review">✍️</button>
+    </div>
+
+    <script>
+        // ============= STATE MANAGEMENT =============
+        let githubToken = '';
+        let geminiKey = '';
+        let currentUser = null;
+        let currentRepo = null;
+        let currentPR = null;
+        let currentReview = null;
+        let allRepos = [];
+
+        // ============= AUTHENTICATION =============
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+
+        function validateGitHubToken() {
+            const token = document.getElementById('githubToken').value.trim();
+            const validation = document.getElementById('githubTokenValidation');
+
+            if (!token) {
+                validation.classList.remove('show');
+                return false;
+            }
+
+            if (token.startsWith('ghp_') && token.length >= 40) {
+                validation.textContent = '✓ Valid token format';
+                validation.className = 'validation-message validation-success show';
+                return true;
+            } else if (token.startsWith('github_pat_') && token.length >= 80) {
+                validation.textContent = '✓ Valid fine-grained token format';
+                validation.className = 'validation-message validation-success show';
+                return true;
+            } else {
+                validation.textContent = '⚠ Token should start with ghp_ or github_pat_';
+                validation.className = 'validation-message validation-error show';
+                return false;
+            }
+        }
+
+        function validateGeminiKey() {
+            const key = document.getElementById('geminiKey').value.trim();
+            const validation = document.getElementById('geminiKeyValidation');
+
+            if (!key) {
+                validation.classList.remove('show');
+                return false;
+            }
+
+            if (key.startsWith('AIzaSy') && key.length >= 39) {
+                validation.textContent = '✓ Valid API key format';
+                validation.className = 'validation-message validation-success show';
+                return true;
+            } else {
+                validation.textContent = '⚠ Key should start with AIzaSy';
+                validation.className = 'validation-message validation-error show';
+                return false;
+            }
+        }
+
+        async function login() {
+            githubToken = document.getElementById('githubToken').value.trim();
+            geminiKey = document.getElementById('geminiKey').value.trim();
+
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            const loginError = document.getElementById('loginError');
+
+            // Validate inputs
+            if (!githubToken || !geminiKey) {
+                showError('loginError', '⚠️ Please enter both GitHub token and Gemini API key');
+                return;
+            }
+
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtnText.textContent = '🔄 Verifying credentials...';
+            loginError.classList.add('hidden');
+
+            try {
+                // Verify GitHub token
+                const response = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${githubToken}` }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Invalid GitHub token. Please check your token and try again.');
+                    } else {
+                        throw new Error('GitHub API error. Please try again later.');
+                    }
+                }
+
+                currentUser = await response.json();
+
+                // Store in localStorage
+                localStorage.setItem('githubToken', githubToken);
+                localStorage.setItem('geminiKey', geminiKey);
+
+                // Show success briefly
+                loginBtnText.textContent = '✅ Success! Loading...';
+
+                setTimeout(() => {
+                    showMainApp();
+                    loadRepositories();
+                }, 500);
+
+            } catch (error) {
+                showError('loginError', '❌ ' + error.message);
+                loginBtn.disabled = false;
+                loginBtnText.textContent = '🚀 Start Reviewing';
+            }
+        }
+
+        function logout() {
+            if (!confirm('Are you sure you want to logout? Your credentials will be removed.')) {
+                return;
+            }
+
+            githubToken = '';
+            geminiKey = '';
+            currentUser = null;
+            currentRepo = null;
+            currentPR = null;
+            currentReview = null;
+
+            localStorage.removeItem('githubToken');
+            localStorage.removeItem('geminiKey');
+
+            // Reset login form
+            document.getElementById('githubToken').value = '';
+            document.getElementById('geminiKey').value = '';
+            document.getElementById('githubTokenValidation').classList.remove('show');
+            document.getElementById('geminiKeyValidation').classList.remove('show');
+            document.getElementById('loginBtn').disabled = false;
+            document.getElementById('loginBtnText').textContent = '🚀 Start Reviewing';
+
+            showLoginScreen();
+        }
+
+        // Check for stored credentials on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const storedGithubToken = localStorage.getItem('githubToken');
+            const storedGeminiKey = localStorage.getItem('geminiKey');
+
+            if (storedGithubToken && storedGeminiKey) {
+                document.getElementById('githubToken').value = storedGithubToken;
+                document.getElementById('geminiKey').value = storedGeminiKey;
+
+                // Validate stored credentials
+                validateGitHubToken();
+                validateGeminiKey();
+
+                // Auto-login
+                login();
+            }
+        });
+
+        // ============= VIEW MANAGEMENT =============
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userInfo').textContent = `Logged in as ${currentUser.login}`;
+            showRepoView();
+        }
+
+        function showRepoView() {
+            document.getElementById('repoView').classList.remove('hidden');
+            document.getElementById('prView').classList.add('hidden');
+            document.getElementById('reviewView').classList.add('hidden');
+        }
+
+        function showPRView() {
+            document.getElementById('repoView').classList.add('hidden');
+            document.getElementById('prView').classList.remove('hidden');
+            document.getElementById('reviewView').classList.add('hidden');
+        }
+
+        function showReviewView() {
+            document.getElementById('repoView').classList.add('hidden');
+            document.getElementById('prView').classList.add('hidden');
+            document.getElementById('reviewView').classList.remove('hidden');
+        }
+
+        function showManualReview() {
+            currentRepo = null;
+            currentPR = null;
+            document.getElementById('codeInput').value = '';
+            document.getElementById('prInfo').classList.add('hidden');
+            document.getElementById('results').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <p>Paste code and analyze</p>
+        </div>
+      `;
+            showReviewView();
+        }
+
+        // ============= REPOSITORY MANAGEMENT =============
+        async function loadRepositories() {
+            const repoList = document.getElementById('repoList');
+            repoList.innerHTML = '<div class="loading">Loading repositories...</div>';
+
+            try {
+                const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+                    headers: { 'Authorization': `token ${githubToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch repositories');
+
+                allRepos = await response.json();
+                displayRepositories(allRepos);
+            } catch (error) {
+                repoList.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayRepositories(repos) {
+            const repoList = document.getElementById('repoList');
+
+            if (repos.length === 0) {
+                repoList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📁</div>
+            <p>No repositories found</p>
+          </div>
+        `;
+                return;
+            }
+
+            repoList.innerHTML = repos.map(repo => `
+        <div class="repo-item" onclick="selectRepository('${repo.owner.login}', '${repo.name}')">
+          <div class="repo-name">${repo.name}</div>
+          <div class="repo-desc">${repo.description || 'No description'}</div>
+          <div class="repo-meta">
+            ${repo.language ? `<span>💻 ${repo.language}</span>` : ''}
+            ${repo.private ? '<span>🔒 Private</span>' : '<span>🌍 Public</span>'}
+            <span>📋 ${repo.open_issues_count} open issues</span>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        function filterRepos() {
+            const searchTerm = document.getElementById('repoSearch').value.toLowerCase();
+            const filtered = allRepos.filter(repo =>
+                repo.name.toLowerCase().includes(searchTerm) ||
+                (repo.description && repo.description.toLowerCase().includes(searchTerm))
+            );
+            displayRepositories(filtered);
+        }
+
+        async function selectRepository(owner, name) {
+            currentRepo = { owner, name };
+            document.getElementById('prViewTitle').textContent = `Pull Requests - ${owner}/${name}`;
+            showPRView();
+            await loadPullRequests();
+        }
+
+        // ============= PULL REQUEST MANAGEMENT =============
+        async function loadPullRequests() {
+            if (!currentRepo) return;
+
+            const prList = document.getElementById('prList');
+            prList.innerHTML = '<div class="loading">Loading pull requests...</div>';
+
+            const state = document.getElementById('prStateFilter').value;
+
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${currentRepo.owner}/${currentRepo.name}/pulls?state=${state}&per_page=50`,
+                    { headers: { 'Authorization': `token ${githubToken}` } }
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch pull requests');
+
+                const pulls = await response.json();
+                displayPullRequests(pulls);
+            } catch (error) {
+                prList.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayPullRequests(pulls) {
+            const prList = document.getElementById('prList');
+
+            if (pulls.length === 0) {
+                prList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>No pull requests found</p>
+          </div>
+        `;
+                return;
+            }
+
+            prList.innerHTML = pulls.map(pr => `
+        <div class="pr-item" onclick="selectPullRequest(${pr.number})">
+          <div class="pr-title">${pr.title}</div>
+          <div class="pr-meta">
+            <span class="pr-badge badge-${pr.state}">${pr.state}</span>
+            <span>👤 ${pr.user.login}</span>
+            <span>📝 ${pr.changed_files} files</span>
+            <span>+${pr.additions} -${pr.deletions}</span>
+            <span>#${pr.number}</span>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        async function selectPullRequest(prNumber) {
+            if (!currentRepo) return;
+
+            currentPR = prNumber;
+            showReviewView();
+
+            document.getElementById('codeInput').value = 'Loading PR files...';
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${currentRepo.owner}/${currentRepo.name}/pulls/${prNumber}/files`,
+                    { headers: { 'Authorization': `token ${githubToken}` } }
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch PR files');
+
+                const files = await response.json();
+
+                const code = files
+                    .filter(f => f.patch)
+                    .map(f => `// File: ${f.filename}\n// Status: ${f.status}\n// Changes: +${f.additions} -${f.deletions}\n\n${f.patch}`)
+                    .join('\n\n' + '='.repeat(80) + '\n\n');
+
+                document.getElementById('codeInput').value = code;
+
+                // Detect language
+                const languages = files.map(f => {
+                    const ext = f.filename.split('.').pop().toLowerCase();
+                    const langMap = {
+                        'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript',
+                        'tsx': 'typescript', 'py': 'python', 'java': 'java',
+                        'go': 'go', 'rs': 'rust', 'cpp': 'cpp', 'cs': 'csharp'
+                    };
+                    return langMap[ext] || 'javascript';
+                });
+
+                if (languages.length > 0) {
+                    document.getElementById('language').value = languages[0];
+                }
+
+                document.getElementById('prInfo').innerHTML = `
+          <h3>PR #${prNumber} - ${currentRepo.owner}/${currentRepo.name}</h3>
+          <p>${files.length} file(s) changed</p>
+        `;
+                document.getElementById('prInfo').classList.remove('hidden');
+
+                document.getElementById('analyzeBtn').disabled = false;
+
+                showSuccess('errorBox', `✅ Loaded ${files.length} file(s) from PR #${prNumber}`);
+                setTimeout(() => hideError('errorBox'), 3000);
+
+            } catch (error) {
+                document.getElementById('codeInput').value = '';
+                showError('errorBox', `Error loading PR: ${error.message}`);
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        // ============= CODE ANALYSIS =============
+        async function analyzeCode() {
+            const code = document.getElementById('codeInput').value.trim();
+            if (!code) {
+                showError('errorBox', 'Please enter code or select a PR to analyze');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '🔄 Analyzing...';
+            btn.disabled = true;
+            hideError('errorBox');
+
+            document.getElementById('results').innerHTML = `
+        <div class="loading">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">🤖</div>
+          <p>AI is reviewing your code...</p>
+        </div>
+      `;
+
+            try {
+                const language = document.getElementById('language').value;
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are a senior code reviewer. Review this ${language} code and respond ONLY with valid JSON in this exact format:
+{
+  "summary": "brief assessment of the code quality and main findings",
+  "bugs": ["bug1", "bug2"],
+  "performance": ["perf1", "perf2"],
+  "style": ["style1", "style2"],
+  "security": ["sec1", "sec2"],
+  "suggestions": ["sug1", "sug2"],
+  "severity": "low|medium|high",
+  "approved": true/false
+}
+
+Code to review:
+${code}`
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 2000,
+                            responseMimeType: 'application/json'
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                currentReview = JSON.parse(text);
+                displayReview(currentReview);
+
+            } catch (error) {
+                showError('errorBox', `Analysis error: ${error.message}`);
+                document.getElementById('results').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">❌</div>
+            <p>Analysis failed</p>
+          </div>
+        `;
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function displayReview(review) {
+            const statusClass = review.approved ? 'review-approved' : 'review-changes';
+            const statusText = review.approved ? '✅ Approved' : '⚠️ Changes Requested';
+
+            let html = `
+        <div class="review-result ${statusClass}">
+          <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">${statusText}</div>
+          <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Severity: ${review.severity}</div>
+          <p>${review.summary}</p>
+        </div>
+      `;
+
+            if (review.bugs?.length) {
+                html += `<div class="issue-section"><h3>🐛 Bugs Found</h3>`;
+                review.bugs.forEach(b => html += `<p>• ${b}</p>`);
+                html += `</div>`;
+            }
+
+            if (review.security?.length) {
+                html += `<div class="issue-section"><h3>🔒 Security Issues</h3>`;
+                review.security.forEach(s => html += `<p>• ${s}</p>`);
+                html += `</div>`;
+            }
+
+            if (review.performance?.length) {
+                html += `<div class="issue-section"><h3>⚡ Performance Issues</h3>`;
+                review.performance.forEach(p => html += `<p>• ${p}</p>`);
+                html += `</div>`;
+            }
+
+            if (review.suggestions?.length) {
+                html += `<div class="issue-section"><h3>💡 Suggestions</h3>`;
+                review.suggestions.forEach(s => html += `<p>• ${s}</p>`);
+                html += `</div>`;
+            }
+
+            document.getElementById('results').innerHTML = html;
+
+            if (currentPR && currentRepo) {
+                document.getElementById('postBtn').classList.remove('hidden');
+            }
+        }
+
+        // ============= GITHUB INTEGRATION =============
+        async function postToGitHub() {
+            if (!currentReview || !currentPR || !currentRepo) {
+                showError('errorBox', 'No review or PR selected');
+                return;
+            }
+
+            const btn = document.getElementById('postBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '📤 Posting...';
+            btn.disabled = true;
+
+            try {
+                let comment = `## 🤖 AI Code Review\n\n`;
+                comment += `**Status:** ${currentReview.approved ? '✅ Approved' : '⚠️ Changes Requested'}\n`;
+                comment += `**Severity:** ${currentReview.severity}\n`;
+                comment += `**Summary:** ${currentReview.summary}\n\n`;
+
+                if (currentReview.bugs?.length) {
+                    comment += `### 🐛 Bugs\n${currentReview.bugs.map(b => `- ${b}`).join('\n')}\n\n`;
+                }
+                if (currentReview.security?.length) {
+                    comment += `### 🔒 Security\n${currentReview.security.map(s => `- ${s}`).join('\n')}\n\n`;
+                }
+                if (currentReview.performance?.length) {
+                    comment += `### ⚡ Performance\n${currentReview.performance.map(p => `- ${p}`).join('\n')}\n\n`;
+                }
+                if (currentReview.suggestions?.length) {
+                    comment += `### 💡 Suggestions\n${currentReview.suggestions.map(s => `- ${s}`).join('\n')}\n`;
+                }
+
+                const response = await fetch(
+                    `https://api.github.com/repos/${currentRepo.owner}/${currentRepo.name}/issues/${currentPR}/comments`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${githubToken}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ body: comment })
+                    }
+                );
+
+                if (!response.ok) throw new Error('Failed to post comment');
+
+                const result = await response.json();
+
+                showSuccess('errorBox', '✅ Review posted to GitHub successfully!');
+                setTimeout(() => hideError('errorBox'), 5000);
+
+                if (result.html_url) {
+                    window.open(result.html_url, '_blank');
+                }
+
+            } catch (error) {
+                showError('errorBox', `Failed to post: ${error.message}`);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ============= UTILITY FUNCTIONS =============
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'error';
+            el.classList.remove('hidden');
+        }
+
+        function showSuccess(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'success';
+            el.classList.remove('hidden');
+        }
+
+        function hideError(elementId) {
+            document.getElementById(elementId).classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>
